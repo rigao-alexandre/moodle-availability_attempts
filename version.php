@@ -18,7 +18,7 @@
  * Version info.
  *
  * @package availability_attempts
- * @copyright 2014 The Open University
+ * @copyright 2020 Alexandre Paes Rigão <rigao.com.br>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

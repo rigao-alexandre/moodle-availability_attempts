@@ -18,7 +18,7 @@
  * Activity attempts condition.
  *
  * @package availability_attempts
- * @copyright 2014 The Open University
+ * @copyright 2020 Alexandre Paes Rigão <rigao.com.br>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -35,7 +35,7 @@ defined('MOODLE_INTERNAL') || die();
  * Activity attempts condition.
  *
  * @package availability_attempts
- * @copyright 2014 The Open University
+ * @copyright 2020 Alexandre Paes Rigão <rigao.com.br>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class condition extends \core_availability\condition {

@@ -18,7 +18,7 @@
  * Unit tests for the completion condition.
  *
  * @package availability_attempts
- * @copyright 2014 The Open University
+ * @copyright 2020 Alexandre Paes Rigão <rigao.com.br>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -32,7 +32,7 @@ global $CFG;
  * Unit tests for the completion condition.
  *
  * @package availability_attempts
- * @copyright 2014 The Open University
+ * @copyright 2020 Alexandre Paes Rigão <rigao.com.br>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class availability_attempts_condition_testcase extends advanced_testcase {
