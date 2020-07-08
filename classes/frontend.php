@@ -64,16 +64,16 @@ class frontend extends \core_availability\frontend {
         // print_string calls twice.
         $cachekey = $course->id . ',' . ($cm ? $cm->id : '') . ($section ? $section->id : '');
         if ($cachekey !== $this->cachekey) {
-            // Get list of activities on course which have completion values, to fill the dropdown.
+            // Get list of activities to fill the dropdown.
             $context = \context_course::instance($course->id);
             $cms = [];
             $modinfo = get_fast_modinfo($course);
             foreach ($modinfo->cms as $id => $othercm) {
                 if (!array_key_exists($othercm->modname, $this->allow)) {
                     continue;
-                }//echo '<pre>';print_r();exit; // TODO
+                }
 
-                // Add each course-module if it has completion turned on and is not the one currently being edited.
+                // Add each course-module if it is not the one currently being edited.
                 if ((empty($cm) || $cm->id != $id) && !$othercm->deletioninprogress) {
                     $allowed = true;
 

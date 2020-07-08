@@ -42,9 +42,6 @@ class condition extends \core_availability\condition {
     /** @var int ID of module that this depends on */
     protected $cmid;
 
-    /** @var array Array of modules used in these conditions for course */
-    protected static $modsusedincondition = [];
-
     /**
      * Constructor.
      *
@@ -56,7 +53,7 @@ class condition extends \core_availability\condition {
         if (isset($structure->cm) && is_number($structure->cm)) {
             $this->cmid = (int)$structure->cm;
         } else {
-            throw new \coding_exception('Missing or invalid ->cm for completion condition');
+            throw new \coding_exception('Missing or invalid ->cm for attempt condition');
         }
     }
 
@@ -157,7 +154,7 @@ class condition extends \core_availability\condition {
         if (!$rec || !$rec->newitemid) {
             // If we are on the same course (e.g. duplicate) then we can just
             // use the existing one.
-            if ($DB->record_exists('course_modules', array('id' => $this->cmid, 'course' => $courseid))) {
+            if ($DB->record_exists('course_modules', ['id' => $this->cmid, 'course' => $courseid])) {
                 return false;
             }
             // Otherwise it's a warning.
@@ -167,13 +164,6 @@ class condition extends \core_availability\condition {
             $this->cmid = (int)$rec->newitemid;
         }
         return true;
-    }
-
-    /**
-     * Wipes the static cache of modules used in a condition (for unit testing).
-     */
-    public static function wipe_static_cache(): void {
-        self::$modsusedincondition = array();
     }
 
     public function update_dependency_id($table, $oldid, $newid): bool {

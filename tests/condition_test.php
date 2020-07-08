@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for the completion condition.
+ * Unit tests for the attempts condition.
  *
  * @package availability_attempts
  * @copyright 2020 Alexandre Paes Rigão <rigao.com.br>
@@ -29,7 +29,7 @@ use availability_attempts\condition;
 global $CFG;
 
 /**
- * Unit tests for the completion condition.
+ * Unit tests for the attempts condition.
  *
  * @package availability_attempts
  * @copyright 2020 Alexandre Paes Rigão <rigao.com.br>
@@ -102,7 +102,6 @@ class availability_attempts_condition_testcase extends advanced_testcase {
                 ['numsections' => 1, 'enablecompletion' => 1],
                 ['createsections' => true]
         );
-        availability_attempts\condition::wipe_static_cache();
 
         $user = $generator->create_user();
 
