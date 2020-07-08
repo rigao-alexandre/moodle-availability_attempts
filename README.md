@@ -13,12 +13,11 @@ Please refer to the official documentation: [Installing Plugins](https://docs.mo
  - Moodle 3.9 (2020060900)
 # Status / Roadmap
 - [X] Support mod_quiz
-- [X] Publish plugin on GitHub
 - [X] Unit tests
 - [X] GDPR
+- [X] Publish plugin on GitHub
 - [ ] Translate to other languages
 - [ ] Review English Language
-- [ ] Submit to [Moodle Plugins directory](https://moodle.org/plugins/)
 - [ ] Support other modules (e.g. Assign (mod_assign))
 - [ ] Behat tests
 - [ ] Submit to [Moodle Plugins directory](https://moodle.org/plugins/)
