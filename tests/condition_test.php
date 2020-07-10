@@ -122,8 +122,8 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         $quiz = $quizgenerator->create_instance([
                 'course' => $course->id,
                 'questionsperpage' => 0,
-                'grade' => 100.0,
-                'sumgrades' => 2,
+                'grade' => 10.0,
+                'sumgrades' => 1,
                 'attempts' => 2,
                 'name' => 'Quiz!'
         ]);

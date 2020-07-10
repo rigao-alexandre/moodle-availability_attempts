@@ -93,9 +93,6 @@ class condition extends \core_availability\condition {
         } else {
             $allow = true;
 
-            $_max_attempts = -INF;
-            $_user_total_attempts = INF;
-
             // $target = $info->get_course_module();
             $source = $modinfo->get_cm($this->cmid);
 
@@ -105,19 +102,34 @@ class condition extends \core_availability\condition {
 
                     $quizobj = \quiz::create($source->instance, $userid);
 
-                    $_max_attempts = +$quizobj->get_num_attempts_allowed();
-                    if ($_max_attempts > 0) {
+                    // quiz has not unlimited attempts
+                    if ($quizobj->get_num_attempts_allowed() > 0) {
                         $userattempts = quiz_get_user_attempts($source->instance, $userid, 'finished', true);
 
+                        // user has taken at least one attempt
                         if ($userattempts) {
-                            $_user_total_attempts = count($userattempts);
-                            // $_user_total_attempts = max(array_keys($userattempts));
+                            $totaluserattempts = count($userattempts);
+                            // $maxuserattempt = max(array_keys($userattempts));
+
+                            $lastfinishedattempt = end($userattempts);
+
+                            $accessmanager = $quizobj->get_access_manager(time());
+
+                            $quizstatus = (
+                                $accessmanager->is_finished($totaluserattempts, $lastfinishedattempt)
+                                // || !empty($accessmanager->prevent_new_attempt($totaluserattempts, $lastfinishedattempt))
+                                // || !empty($accessmanager->prevent_access())
+                            );
+
+                            // user has attempts left
+                            if (!$quizstatus) {
+                                $allow = false;
+                            }
                         } else {
-                            $_user_total_attempts = 0;
+                            // quiz has not unlimited attempts and user has not take any attempt
+                            $allow = false;
                         }
                     }
-
-                    $allow = $_user_total_attempts >= $_max_attempts;
                 break;
 
                 default: break;
