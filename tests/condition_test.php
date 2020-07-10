@@ -93,6 +93,9 @@ class availability_attempts_condition_testcase extends advanced_testcase {
 
         $this->resetAfterTest();
 
+        /**
+         * SETUP
+         */
         // Create course with completion turned on.
         $CFG->enablecompletion = true;
         $CFG->enableavailability = true;
@@ -142,19 +145,19 @@ class availability_attempts_condition_testcase extends advanced_testcase {
                 'cm' => (int)$quizcm->id
         ]);
 
+        // ATTEMPT 0/2 - available
         $information = $cond->get_description(false, true, $info);
         $information = \core_availability\info::format_info($information, $course);
         $this->assertRegExp('~User has not taken all attempts on the activity .*Quiz!.*~', $information);
-        $this->assertTrue($cond->is_available(true, $info, true, $user->id));
+        $this->assertTrue($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 0/2 - CONDITION FALSE - EXPECTED TRUE');
 
+        // ATTEMPT 0/2 - not available
         $information = $cond->get_description(false, false, $info);
         $information = \core_availability\info::format_info($information, $course);
         $this->assertRegExp('~User has taken all attempts on the activity .*Quiz!.*~', $information);
-        $this->assertFalse($cond->is_available(false, $info, true, $user->id));
+        $this->assertFalse($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 0/2 - CONDITION TRUE - EXPECTED FALSE');
 
-        /**
-         * Attempt 1
-         */
+        // ATTEMPT 1/2 - not available
         $quba = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
         $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
         $timenow = time();
@@ -174,12 +177,10 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         $attemptobj = quiz_attempt::create($attempt->id);
 
         // retest
-        $this->assertTrue($cond->is_available(true, $info, true, $user->id));
-        $this->assertFalse($cond->is_available(false, $info, true, $user->id));
+        $this->assertTrue($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 1/2 - CONDITION FALSE - EXPECTED TRUE');
+        $this->assertFalse($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 1/2 - CONDITION TRUE - EXPECTED FALSE');
 
-        /**
-         * Attempt 2
-         */
+        // ATTEMPT 2/2 - available
         $quba = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
         $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
         $timenow = time();
@@ -193,24 +194,20 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         $attemptobj = quiz_attempt::create($attempt->id);
 
         // retest
-        $this->assertFalse($cond->is_available(true, $info, true, $user->id));
-        $this->assertTrue($cond->is_available(false, $info, true, $user->id));
+        $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 2/2 - CONDITION FALSE - EXPECTED FALSE');
+        $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 2/2 - CONDITION TRUE - EXPECTED TRUE');
 
-        /**
-         * Group Override
-         */
+        // GROUP override 2/3 - not available
         $groupoverride = $DB->insert_record('quiz_overrides', [
                 'quiz' => $quiz->id,
                 'groupid' => $group->id,
                 'attempts' => 3,
         ]);
 
-        $this->assertTrue($cond->is_available(true, $info, true, $user->id));
-        $this->assertFalse($cond->is_available(false, $info, true, $user->id));
+        $this->assertTrue($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 2/3 (AFTER GROUP OVERRIDE) - CONDITION FALSE - EXPECTED TRUE');
+        $this->assertFalse($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 2/3 (AFTER GROUP OVERRIDE) - CONDITION TRUE - EXPECTED FALSE');
 
-        /**
-         * Attempt 3
-         */
+        // ATTEMPT 3/3 - available
         $quba = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
         $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
         $timenow = time();
@@ -224,24 +221,20 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         $attemptobj = quiz_attempt::create($attempt->id);
 
         // retest
-        $this->assertFalse($cond->is_available(true, $info, true, $user->id));
-        $this->assertTrue($cond->is_available(false, $info, true, $user->id));
+        $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 3/3 - CONDITION FALSE - EXPECTED FALSE');
+        $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 3/3 - CONDITION TRUE - EXPECTED TRUE');
 
-        /**
-         * User Override (UP)
-         */
+        // USER override (up) 3/4 - not available
         $useroverride = $DB->insert_record('quiz_overrides', [
                 'quiz' => $quiz->id,
                 'userid' => $user->id,
                 'attempts' => 4,
         ]);
 
-        $this->assertTrue($cond->is_available(true, $info, true, $user->id));
-        $this->assertFalse($cond->is_available(false, $info, true, $user->id));
+        $this->assertTrue($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 3/4 (AFTER USER OVERRIDE) - CONDITION FALSE - EXPECTED TRUE');
+        $this->assertFalse($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 3/4 (AFTER USER OVERRIDE) - CONDITION TRUE - EXPECTED FALSE');
 
-        /**
-         * Attempt 4
-         */
+        // ATTEMPT 4/4 - available
         $quba = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
         $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
         $timenow = time();
@@ -255,12 +248,10 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         $attemptobj = quiz_attempt::create($attempt->id);
 
         // retest
-        $this->assertFalse($cond->is_available(true, $info, true, $user->id));
-        $this->assertTrue($cond->is_available(false, $info, true, $user->id));
+        $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 4/4 - CONDITION FALSE - EXPECTED FALSE');
+        $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 4/4 - CONDITION TRUE - EXPECTED TRUE');
 
-        /**
-         * User Override (DOWN)
-         */
+        // USER override (down) 4/1 - available
 
         $DB->update_record('quiz_overrides', [
                 'id' => $useroverride,
@@ -270,8 +261,20 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         ]);
 
         // retest
-        $this->assertFalse($cond->is_available(true, $info, true, $user->id));
-        $this->assertTrue($cond->is_available(false, $info, true, $user->id));
+        $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 4/1 (AFTER USER OVERRIDE) - CONDITION FALSE - EXPECTED FALSE');
+        $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 4/1 (AFTER USER OVERRIDE) - CONDITION TRUE - EXPECTED TRUE');
+
+        // USER override (unlimited) 4/unlimited - available
+        $DB->update_record('quiz_overrides', [
+            'id' => $useroverride,
+            'quiz' => $quiz->id,
+            'userid' => $user->id,
+            'attempts' => 0,
+        ]);
+
+        // retest
+        $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 4/unlimited (AFTER USER OVERRIDE) - CONDITION FALSE - EXPECTED FALSE');
+        $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 4/unlimited (AFTER USER OVERRIDE) - CONDITION TRUE - EXPECTED TRUE');
     }
 
     /**

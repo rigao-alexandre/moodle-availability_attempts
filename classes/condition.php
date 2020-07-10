@@ -93,8 +93,8 @@ class condition extends \core_availability\condition {
         } else {
             $allow = true;
 
-            $_attempts = [-INF];
-            $_user_attempts = -INF;
+            $_max_attempts = -INF;
+            $_user_total_attempts = INF;
 
             // $target = $info->get_course_module();
             $source = $modinfo->get_cm($this->cmid);
@@ -105,17 +105,23 @@ class condition extends \core_availability\condition {
 
                     $quizobj = \quiz::create($source->instance, $userid);
 
-                    $_attempts[] = +$quizobj->get_num_attempts_allowed();
-                    $_user_attempts = count(quiz_get_user_attempts($source->instance, $userid, 'finished', true));
+                    $_max_attempts = +$quizobj->get_num_attempts_allowed();
+                    if ($_max_attempts > 0) {
+                        $userattempts = quiz_get_user_attempts($source->instance, $userid, 'finished', true);
+
+                        if ($userattempts) {
+                            $_user_total_attempts = count($userattempts);
+                            // $_user_total_attempts = max(array_keys($userattempts));
+                        } else {
+                            $_user_total_attempts = 0;
+                        }
+                    }
+
+                    $allow = $_user_total_attempts >= $_max_attempts;
                 break;
 
                 default: break;
             }
-
-            $max_attempts = max($_attempts);
-
-            // to prevent overrides that subtract attempts
-            $allow = $_user_attempts >= $max_attempts;
 
             if ($not) {
                 $allow = !$allow;
