@@ -100,7 +100,12 @@ class condition extends \core_availability\condition {
                 case 'quiz':
                     require_once($CFG->dirroot.'/mod/quiz/locallib.php');
 
-                    $quizobj = \quiz::create($source->instance, $userid);
+                    // Moodle 4.2 replaced the global \quiz class with \mod_quiz\quiz_settings.
+                    if (class_exists('\mod_quiz\quiz_settings')) {
+                        $quizobj = \mod_quiz\quiz_settings::create($source->instance, $userid);
+                    } else {
+                        $quizobj = \quiz::create($source->instance, $userid);
+                    }
 
                     // quiz has not unlimited attempts
                     if ($quizobj->get_num_attempts_allowed() > 0) {

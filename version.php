@@ -24,6 +24,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2020060900;
+$plugin->version = 2026082000;
 $plugin->requires = 2020060900;
 $plugin->component = 'availability_attempts';
+$plugin->maturity = MATURITY_STABLE;
+$plugin->release = 'v1.1.0';
+// Branch range actually verified against Moodle core (API + CI matrix): 3.9 through 5.2.
+$plugin->supported = [39, 502];
