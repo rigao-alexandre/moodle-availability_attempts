@@ -22,11 +22,7 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-use availability_attempts\condition;
-
-global $CFG;
+namespace availability_attempts;
 
 /**
  * Unit tests for the attempts condition.
@@ -35,28 +31,80 @@ global $CFG;
  * @copyright 2020 Alexandre Paes Rigão <rigao.com.br>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class availability_attempts_condition_testcase extends advanced_testcase {
+final class condition_test extends \advanced_testcase {
     /**
      * Load required classes.
      */
-    public function setUp() {
+    public function setUp(): void {
         // Load the mock info class so that it can be used.
         global $CFG;
         require_once($CFG->dirroot . '/availability/tests/fixtures/mock_info.php');
+        parent::setUp();
+    }
+
+    /**
+     * Creates a quiz object, using whichever class the running Moodle version exposes.
+     *
+     * Moodle 4.2 replaced the global \quiz class with \mod_quiz\quiz_settings.
+     *
+     * @param int $quizid Quiz instance id
+     * @param int $userid User id
+     * @return \mod_quiz\quiz_settings|\quiz Quiz object
+     */
+    protected function create_quiz_object(int $quizid, int $userid) {
+        if (class_exists('\mod_quiz\quiz_settings')) {
+            return \mod_quiz\quiz_settings::create($quizid, $userid);
+        } else {
+            return \quiz::create($quizid, $userid);
+        }
+    }
+
+    /**
+     * Loads a quiz attempt object, using whichever class the running Moodle version exposes.
+     *
+     * Moodle 4.2 replaced the global \quiz_attempt class with \mod_quiz\quiz_attempt.
+     *
+     * @param int $attemptid Quiz attempt id
+     * @return \mod_quiz\quiz_attempt|\quiz_attempt Quiz attempt object
+     */
+    protected function create_quiz_attempt_object(int $attemptid) {
+        if (class_exists('\mod_quiz\quiz_attempt')) {
+            return \mod_quiz\quiz_attempt::create($attemptid);
+        } else {
+            return \quiz_attempt::create($attemptid);
+        }
+    }
+
+    /**
+     * Finishes a quiz attempt, using whichever API the running Moodle version exposes.
+     *
+     * Moodle 5.0 (MDL-68806) deprecated quiz_attempt::process_finish() in favour of
+     * process_submit() + process_grade_submission().
+     *
+     * @param \mod_quiz\quiz_attempt|\quiz_attempt $attemptobj Quiz attempt object
+     * @param int $timenow Timestamp to record as last modified/finish time
+     */
+    protected function finish_quiz_attempt($attemptobj, int $timenow): void {
+        if (method_exists($attemptobj, 'process_submit')) {
+            $attemptobj->process_submit($timenow, false);
+            $attemptobj->process_grade_submission($timenow);
+        } else {
+            $this->finish_quiz_attempt($attemptobj, $timenow);
+        }
     }
 
     /**
      * Tests the constructor including error conditions. Also tests the
      * string conversion feature (intended for debugging only).
      */
-    public function test_constructor() {
+    public function test_constructor(): void {
         // No parameters.
-        $structure = new stdClass();
+        $structure = new \stdClass();
         try {
             $cond = new condition($structure);
             $this->fail();
-        } catch (coding_exception $e) {
-            $this->assertContains('Missing or invalid ->cm', $e->getMessage());
+        } catch (\coding_exception $e) {
+            $this->assertStringContainsString('Missing or invalid ->cm', $e->getMessage());
         }
 
         // Invalid $cm.
@@ -64,8 +112,8 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         try {
             $cond = new condition($structure);
             $this->fail();
-        } catch (coding_exception $e) {
-            $this->assertContains('Missing or invalid ->cm', $e->getMessage());
+        } catch (\coding_exception $e) {
+            $this->assertStringContainsString('Missing or invalid ->cm', $e->getMessage());
         }
 
         $structure->cm = 42;
@@ -78,7 +126,7 @@ class availability_attempts_condition_testcase extends advanced_testcase {
     /**
      * Tests the save() function.
      */
-    public function test_save() {
+    public function test_save(): void {
         $structure = (object)['cm' => 42];
         $cond = new condition($structure);
         $structure->type = 'attempts';
@@ -88,7 +136,7 @@ class availability_attempts_condition_testcase extends advanced_testcase {
     /**
      * Tests the is_available and get_description functions.
      */
-    public function test_usage() {
+    public function test_usage(): void {
         global $CFG, $DB;
 
         $this->resetAfterTest();
@@ -112,12 +160,12 @@ class availability_attempts_condition_testcase extends advanced_testcase {
 
         $this->setUser($user);
 
-        // Create group
+        // Create group.
         $group = $generator->create_group(['courseid' => $course->id]);
-        // Add user to group
+        // Add user to group.
         $this->assertTrue(groups_add_member($group, $user));
 
-        // Create Quiz, Category, Question
+        // Create Quiz, Category, Question.
         $quizgenerator = $generator->get_plugin_generator('mod_quiz');
         $quiz = $quizgenerator->create_instance([
                 'course' => $course->id,
@@ -137,7 +185,7 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         $modinfo = get_fast_modinfo($course);
 
         $quizcm = $modinfo->get_cm($quiz->cmid);
-        $quizobj = quiz::create($quiz->id, $user->id);
+        $quizobj = $this->create_quiz_object($quiz->id, $user->id);
 
         $info = new \core_availability\mock_info($course, $user->id);
 
@@ -145,20 +193,20 @@ class availability_attempts_condition_testcase extends advanced_testcase {
                 'cm' => (int)$quizcm->id
         ]);
 
-        // ATTEMPT 0/2 - available
+        // ATTEMPT 0/2 - available.
         $information = $cond->get_description(false, true, $info);
         $information = \core_availability\info::format_info($information, $course);
-        $this->assertRegExp('~User has not taken all attempts on the activity .*Quiz!.*~', $information);
+        $this->assertMatchesRegularExpression('~User has not taken all attempts on the activity .*Quiz!.*~', $information);
         $this->assertTrue($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 0/2 - CONDITION FALSE - EXPECTED TRUE');
 
-        // ATTEMPT 0/2 - not available
+        // ATTEMPT 0/2 - not available.
         $information = $cond->get_description(false, false, $info);
         $information = \core_availability\info::format_info($information, $course);
-        $this->assertRegExp('~User has taken all attempts on the activity .*Quiz!.*~', $information);
+        $this->assertMatchesRegularExpression('~User has taken all attempts on the activity .*Quiz!.*~', $information);
         $this->assertFalse($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 0/2 - CONDITION TRUE - EXPECTED FALSE');
 
-        // ATTEMPT 1/2 - not available
-        $quba = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
+        // ATTEMPT 1/2 - not available.
+        $quba = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
         $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
         $timenow = time();
         $attempt = quiz_create_attempt($quizobj, 1, false, $timenow, false, $user->id);
@@ -166,38 +214,38 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         quiz_attempt_save_started($quizobj, $quba, $attempt);
 
         // Process some responses from the student.
-        $attemptobj = quiz_attempt::create($attempt->id);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
         $attemptobj->process_submitted_actions($timenow, false, [1 => ['answer' => '3.14']]);
 
         // Finish the attempt.
-        $attemptobj = quiz_attempt::create($attempt->id);
-        $attemptobj->process_finish($timenow, false);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
+        $this->finish_quiz_attempt($attemptobj, $timenow);
 
         // Re-load quiz attempt data.
-        $attemptobj = quiz_attempt::create($attempt->id);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
 
-        // retest
+        // Retest.
         $this->assertTrue($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 1/2 - CONDITION FALSE - EXPECTED TRUE');
         $this->assertFalse($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 1/2 - CONDITION TRUE - EXPECTED FALSE');
 
-        // ATTEMPT 2/2 - available
-        $quba = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
+        // ATTEMPT 2/2 - available.
+        $quba = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
         $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
         $timenow = time();
         $attempt = quiz_create_attempt($quizobj, 2, $attempt, $timenow, false, $user->id);
         quiz_start_new_attempt($quizobj, $quba, $attempt, 2, $timenow);
         quiz_attempt_save_started($quizobj, $quba, $attempt);
-        $attemptobj = quiz_attempt::create($attempt->id);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
         $attemptobj->process_submitted_actions($timenow, false, [1 => ['answer' => '3.14']]);
-        $attemptobj = quiz_attempt::create($attempt->id);
-        $attemptobj->process_finish($timenow, false);
-        $attemptobj = quiz_attempt::create($attempt->id);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
+        $this->finish_quiz_attempt($attemptobj, $timenow);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
 
-        // retest
+        // Retest.
         $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 2/2 - CONDITION FALSE - EXPECTED FALSE');
         $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 2/2 - CONDITION TRUE - EXPECTED TRUE');
 
-        // GROUP override 2/3 - not available
+        // GROUP override 2/3 - not available.
         $groupoverride = $DB->insert_record('quiz_overrides', [
                 'quiz' => $quiz->id,
                 'groupid' => $group->id,
@@ -207,24 +255,24 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         $this->assertTrue($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 2/3 (AFTER GROUP OVERRIDE) - CONDITION FALSE - EXPECTED TRUE');
         $this->assertFalse($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 2/3 (AFTER GROUP OVERRIDE) - CONDITION TRUE - EXPECTED FALSE');
 
-        // ATTEMPT 3/3 - available
-        $quba = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
+        // ATTEMPT 3/3 - available.
+        $quba = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
         $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
         $timenow = time();
         $attempt = quiz_create_attempt($quizobj, 3, $attempt, $timenow, false, $user->id);
         quiz_start_new_attempt($quizobj, $quba, $attempt, 3, $timenow);
         quiz_attempt_save_started($quizobj, $quba, $attempt);
-        $attemptobj = quiz_attempt::create($attempt->id);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
         $attemptobj->process_submitted_actions($timenow, false, [1 => ['answer' => '3.14']]);
-        $attemptobj = quiz_attempt::create($attempt->id);
-        $attemptobj->process_finish($timenow, false);
-        $attemptobj = quiz_attempt::create($attempt->id);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
+        $this->finish_quiz_attempt($attemptobj, $timenow);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
 
-        // retest
+        // Retest.
         $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 3/3 - CONDITION FALSE - EXPECTED FALSE');
         $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 3/3 - CONDITION TRUE - EXPECTED TRUE');
 
-        // USER override (up) 3/4 - not available
+        // USER override (up) 3/4 - not available.
         $useroverride = $DB->insert_record('quiz_overrides', [
                 'quiz' => $quiz->id,
                 'userid' => $user->id,
@@ -234,25 +282,24 @@ class availability_attempts_condition_testcase extends advanced_testcase {
         $this->assertTrue($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 3/4 (AFTER USER OVERRIDE) - CONDITION FALSE - EXPECTED TRUE');
         $this->assertFalse($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 3/4 (AFTER USER OVERRIDE) - CONDITION TRUE - EXPECTED FALSE');
 
-        // ATTEMPT 4/4 - available
-        $quba = question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
+        // ATTEMPT 4/4 - available.
+        $quba = \question_engine::make_questions_usage_by_activity('mod_quiz', $quizobj->get_context());
         $quba->set_preferred_behaviour($quizobj->get_quiz()->preferredbehaviour);
         $timenow = time();
         $attempt = quiz_create_attempt($quizobj, 4, $attempt, $timenow, false, $user->id);
         quiz_start_new_attempt($quizobj, $quba, $attempt, 4, $timenow);
         quiz_attempt_save_started($quizobj, $quba, $attempt);
-        $attemptobj = quiz_attempt::create($attempt->id);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
         $attemptobj->process_submitted_actions($timenow, false, [1 => ['answer' => '3.14']]);
-        $attemptobj = quiz_attempt::create($attempt->id);
-        $attemptobj->process_finish($timenow, false);
-        $attemptobj = quiz_attempt::create($attempt->id);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
+        $this->finish_quiz_attempt($attemptobj, $timenow);
+        $attemptobj = $this->create_quiz_attempt_object($attempt->id);
 
-        // retest
+        // Retest.
         $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 4/4 - CONDITION FALSE - EXPECTED FALSE');
         $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 4/4 - CONDITION TRUE - EXPECTED TRUE');
 
-        // USER override (down) 4/1 - available
-
+        // USER override (down) 4/1 - available.
         $DB->update_record('quiz_overrides', [
                 'id' => $useroverride,
                 'quiz' => $quiz->id,
@@ -260,11 +307,11 @@ class availability_attempts_condition_testcase extends advanced_testcase {
                 'attempts' => 1,
         ]);
 
-        // retest
+        // Retest.
         $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 4/1 (AFTER USER OVERRIDE) - CONDITION FALSE - EXPECTED FALSE');
         $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 4/1 (AFTER USER OVERRIDE) - CONDITION TRUE - EXPECTED TRUE');
 
-        // USER override (unlimited) 4/unlimited - available
+        // USER override (unlimited) 4/unlimited - available.
         $DB->update_record('quiz_overrides', [
             'id' => $useroverride,
             'quiz' => $quiz->id,
@@ -272,7 +319,7 @@ class availability_attempts_condition_testcase extends advanced_testcase {
             'attempts' => 0,
         ]);
 
-        // retest
+        // Retest.
         $this->assertFalse($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 4/unlimited (AFTER USER OVERRIDE) - CONDITION FALSE - EXPECTED FALSE');
         $this->assertTrue($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 4/unlimited (AFTER USER OVERRIDE) - CONDITION TRUE - EXPECTED TRUE');
     }
@@ -280,7 +327,7 @@ class availability_attempts_condition_testcase extends advanced_testcase {
     /**
      * Tests the update_dependency_id() function.
      */
-    public function test_update_dependency_id() {
+    public function test_update_dependency_id(): void {
         $cond = new condition((object)['cm' => 123]);
         $this->assertFalse($cond->update_dependency_id('frogs', 123, 456));
         $this->assertFalse($cond->update_dependency_id('course_modules', 12, 34));
