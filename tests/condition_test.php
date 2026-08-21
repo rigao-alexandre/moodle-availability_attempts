@@ -89,7 +89,7 @@ final class condition_test extends \advanced_testcase {
             $attemptobj->process_submit($timenow, false);
             $attemptobj->process_grade_submission($timenow);
         } else {
-            $this->finish_quiz_attempt($attemptobj, $timenow);
+            $attemptobj->process_finish($timenow, false);
         }
     }
 
