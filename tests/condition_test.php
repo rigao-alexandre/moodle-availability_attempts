@@ -94,6 +94,23 @@ final class condition_test extends \advanced_testcase {
     }
 
     /**
+     * Asserts that a string matches a regular expression, using whichever PHPUnit API is
+     * available: assertMatchesRegularExpression() was added in PHPUnit 9.1, replacing the
+     * deprecated assertRegExp() which was then removed in PHPUnit 10 (Moodle 3.9-3.11 still
+     * ship PHPUnit 8, which only has assertRegExp()).
+     *
+     * @param string $pattern Regular expression pattern
+     * @param string $string String to match
+     */
+    protected function assert_matches_regex(string $pattern, string $string): void {
+        if (method_exists($this, 'assertMatchesRegularExpression')) {
+            $this->assertMatchesRegularExpression($pattern, $string);
+        } else {
+            $this->assertRegExp($pattern, $string);
+        }
+    }
+
+    /**
      * Tests the constructor including error conditions. Also tests the
      * string conversion feature (intended for debugging only).
      */
@@ -196,13 +213,13 @@ final class condition_test extends \advanced_testcase {
         // ATTEMPT 0/2 - available.
         $information = $cond->get_description(false, true, $info);
         $information = \core_availability\info::format_info($information, $course);
-        $this->assertMatchesRegularExpression('~User has not taken all attempts on the activity .*Quiz!.*~', $information);
+        $this->assert_matches_regex('~User has not taken all attempts on the activity .*Quiz!.*~', $information);
         $this->assertTrue($cond->is_available(true, $info, true, $user->id), 'ATTEMPT 0/2 - CONDITION FALSE - EXPECTED TRUE');
 
         // ATTEMPT 0/2 - not available.
         $information = $cond->get_description(false, false, $info);
         $information = \core_availability\info::format_info($information, $course);
-        $this->assertMatchesRegularExpression('~User has taken all attempts on the activity .*Quiz!.*~', $information);
+        $this->assert_matches_regex('~User has taken all attempts on the activity .*Quiz!.*~', $information);
         $this->assertFalse($cond->is_available(false, $info, true, $user->id), 'ATTEMPT 0/2 - CONDITION TRUE - EXPECTED FALSE');
 
         // ATTEMPT 1/2 - not available.
