@@ -22,10 +22,9 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['description'] = 'Require students to complete (or not complete) another activity attempts.';
+$string['description'] = 'Require students to have exhausted (or not exhausted) the attempts allowed on another activity.';
 $string['error_selectcmid'] = 'You must select an activity for the attempts condition.';
 $string['label_cm'] = 'Activity or Resource';
-$string['label_attempts'] = 'Required all attempts taken status (overrides included, if apply)';
 $string['missing'] = '(Missing activity or resource)';
 $string['pluginname'] = 'Restriction by activity attempts';
 $string['requires_attempts'] = 'User has taken all attempts on the activity <strong>{$a}</strong>';

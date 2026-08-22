@@ -51,8 +51,7 @@ class frontend extends \core_availability\frontend {
 
     protected function get_javascript_strings() {
         return [
-            'label_cm',
-            'label_attempts'
+            'label_cm'
         ];
     }
 
