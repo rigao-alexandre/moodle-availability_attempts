@@ -10,10 +10,25 @@ there is no "all attempts used" state to reach otherwise, so unlimited-attempt q
 out of the dropdown when adding this restriction.
 
 **Main use case:** gate a grade-recovery activity so it only appears once a student has used up
-every attempt on the original quiz, combined with Moodle's native "Restrict access > Grade"
-condition so it only actually opens up if they *also* haven't reached the required grade yet.
-That combination needs both conditions on the recovery activity: this plugin for "attempts
-exhausted", and the native Grade restriction for "hasn't passed".
+every attempt on the original quiz *and* still hasn't reached a passing grade. That needs two
+conditions combined with "match all" on the recovery activity: this plugin for "attempts
+exhausted", plus one of the following for "hasn't passed".
+
+- **Recommended: native "Restrict access > Activity completion"**, pointing at the source quiz,
+  with "Required completion status" set to "must be complete with fail grade". This reads the
+  quiz's own pass/fail state directly - no separate value to keep in sync. It does need the quiz
+  to have completion tracking set to "Show activity as complete when conditions are met" with
+  "Require grade" checked (and "Require passing grade" checked too, for robustness - Moodle can
+  still surface a fail state without it whenever the quiz has a "Grade to pass" set and its grade
+  item isn't hidden, but checking it makes the intent explicit and keeps the pass/fail signal
+  correct even if the grade item's visibility changes later).
+- **Alternative: native "Restrict access > Grade"**, pointing at the source quiz, with "must be <"
+  checked. This one only understands raw percentage of the quiz's max grade, with no notion of
+  "grade to pass" - so the percentage has to be entered by hand (`grade_to_pass / quiz_max_grade *
+  100`) and re-entered by hand again if the quiz's pass grade or max grade ever changes.
+
+See `tests/behat/availability_attempts.feature` for a working example of the recommended
+combination end-to-end.
 
 This plugin is a companion to
 [Fail Grade Quiz Access Rule (quizaccess_failgrade)](https://github.com/rigao-alexandre/moodle-quizaccess_failgrade) -
