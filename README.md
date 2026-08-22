@@ -125,7 +125,7 @@ suite locally.
 - [x] GDPR
 - [x] Publish plugin on GitHub
 - [ ] Translate to other languages
-- [ ] Review English Language
+- [x] Review English Language
 - [ ] Submit to [Moodle Plugins directory](https://moodle.org/plugins/)
 - [ ] Support mod_lesson - lesson has no numeric "attempts allowed" setting equivalent to quiz's.
       Its `maxattempts` field actually means "maximum tries per question", not attempts at the
